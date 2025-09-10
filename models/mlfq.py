@@ -5,3 +5,6 @@ class MultilevelFeedbackQueue:
 
     def schedule(self):
         return self.scheduling_algorithm(*self.queues)
+    
+    # 3 queues with different scheduling algorithms and quantums
+

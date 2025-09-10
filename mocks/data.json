@@ -8,11 +8,31 @@
         "criterio_empate": "FCFS"
       },
       "procesos": [
-        { "pid": "P1", "llegada": 0, "rafaga": 7 },
-        { "pid": "P2", "llegada": 2, "rafaga": 4 },
-        { "pid": "P3", "llegada": 4, "rafaga": 1 },
-        { "pid": "P4", "llegada": 5, "rafaga": 4 },
-        { "pid": "P5", "llegada": 6, "rafaga": 6 }
+        {
+          "pid": "P1",
+          "llegada": 0,
+          "rafaga": 7
+        },
+        {
+          "pid": "P2",
+          "llegada": 2,
+          "rafaga": 4
+        },
+        {
+          "pid": "P3",
+          "llegada": 4,
+          "rafaga": 1
+        },
+        {
+          "pid": "P4",
+          "llegada": 5,
+          "rafaga": 4
+        },
+        {
+          "pid": "P5",
+          "llegada": 6,
+          "rafaga": 6
+        }
       ]
     },
     {
@@ -23,11 +43,36 @@
         "criterio_empate": "FCFS"
       },
       "procesos": [
-        { "pid": "P1", "llegada": 0, "rafaga": 7, "prioridad": 2 },
-        { "pid": "P2", "llegada": 2, "rafaga": 4, "prioridad": 1 },
-        { "pid": "P3", "llegada": 4, "rafaga": 1, "prioridad": 3 },
-        { "pid": "P4", "llegada": 5, "rafaga": 4, "prioridad": 2 },
-        { "pid": "P5", "llegada": 6, "rafaga": 6, "prioridad": 4 }
+        {
+          "pid": "P1",
+          "llegada": 0,
+          "rafaga": 7,
+          "prioridad": 2
+        },
+        {
+          "pid": "P2",
+          "llegada": 2,
+          "rafaga": 4,
+          "prioridad": 1
+        },
+        {
+          "pid": "P3",
+          "llegada": 4,
+          "rafaga": 1,
+          "prioridad": 3
+        },
+        {
+          "pid": "P4",
+          "llegada": 5,
+          "rafaga": 4,
+          "prioridad": 2
+        },
+        {
+          "pid": "P5",
+          "llegada": 6,
+          "rafaga": 6,
+          "prioridad": 4
+        }
       ]
     },
     {
@@ -37,32 +82,81 @@
         "semilla": 42
       },
       "procesos": [
-        { "pid": "P1", "llegada": 0, "rafaga": 7, "boletos": 25 },
-        { "pid": "P2", "llegada": 2, "rafaga": 4, "boletos": 15 },
-        { "pid": "P3", "llegada": 4, "rafaga": 1, "boletos": 5 },
-        { "pid": "P4", "llegada": 5, "rafaga": 4, "boletos": 20 },
-        { "pid": "P5", "llegada": 6, "rafaga": 6, "boletos": 10 }
+        {
+          "pid": "P1",
+          "llegada": 0,
+          "rafaga": 7,
+          "boletos": 25
+        },
+        {
+          "pid": "P2",
+          "llegada": 2,
+          "rafaga": 4,
+          "boletos": 15
+        },
+        {
+          "pid": "P3",
+          "llegada": 4,
+          "rafaga": 1,
+          "boletos": 5
+        },
+        {
+          "pid": "P4",
+          "llegada": 5,
+          "rafaga": 4,
+          "boletos": 20
+        },
+        {
+          "pid": "P5",
+          "llegada": 6,
+          "rafaga": 6,
+          "boletos": 10
+        }
       ]
     },
     {
       "algoritmo": "FeedbackQueue",
       "parametros": {
         "colas": [
-          { "nivel": 0, "quantum": 2 },
-          { "nivel": 1, "quantum": 4 },
-          { "nivel": 2, "quantum": 8 }
-        ],
-        "cola_inicial": 0,
-        "degradar_al_expirar_quantum": true,
-        "boost_global_intervalo": 50,
-        "envejecimiento_umbral": 12
+          {
+            "nombre": "Nivel 0",
+            "quantum": 2
+          },
+          {
+            "nombre": "Nivel 1",
+            "quantum": 4
+          },
+          {
+            "nombre": "Nivel 2"
+          }
+        ]
       },
       "procesos": [
-        { "pid": "P1", "llegada": 0, "rafaga": 7 },
-        { "pid": "P2", "llegada": 2, "rafaga": 4 },
-        { "pid": "P3", "llegada": 4, "rafaga": 1 },
-        { "pid": "P4", "llegada": 5, "rafaga": 4 },
-        { "pid": "P5", "llegada": 6, "rafaga": 6 }
+        {
+          "pid": "P1",
+          "llegada": 0,
+          "rafaga": 7
+        },
+        {
+          "pid": "P2",
+          "llegada": 2,
+          "rafaga": 4
+        },
+        {
+          "pid": "P3",
+          "llegada": 4,
+          "rafaga": 1
+        },
+        {
+          "pid": "P4",
+          "llegada": 5,
+          "rafaga": 4
+        },
+        {
+          "pid": "P5",
+          "llegada": 6,
+          "rafaga": 6
+        }
       ]
     }
   ]
