@@ -119,12 +119,10 @@
       "parametros": {
         "colas": [
           {
-            "nombre": "Nivel 0",
-            "quantum": 2
+            "nombre": "Nivel 0"
           },
           {
-            "nombre": "Nivel 1",
-            "quantum": 4
+            "nombre": "Nivel 1"
           },
           {
             "nombre": "Nivel 2"

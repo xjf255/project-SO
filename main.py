@@ -17,7 +17,7 @@ for process_data in queue_processes_data:
 
 for queue_data in queues_data['parametros']['colas']:
   print(f'Queue: {queue_data}')
-  queue = Queue(queue_data.get('nombre'), quantum=queue_data.get('quantum'))
+  queue = Queue(queue_data.get('nombre'), quantum=queue_data.get('quantum') if 'quantum' in queue_data else None)
   queues.append(queue)
 
 mlfq = MultilevelFeedbackQueue(*queues)
