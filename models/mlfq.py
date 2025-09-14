@@ -1,16 +1,10 @@
 from models.process import Process
-from models.queue import Queue
 from typing import List
 import time
 class MultilevelFeedbackQueue:
     def __init__(self, *queue_configs):
         # Sort queues by priority (lower number = higher priority)
-        self.queues = [Queue(config['name'], 
-                           config.get('quantum'), 
-                           config.get('priority', i)) 
-                      for i, config in enumerate(queue_configs)]
-        
-        self.queues.sort(key=lambda q: q.priority)
+        self.queues = queue_configs
         self.all_processes: List[Process] = []
         self.current_time = 0
     
@@ -50,6 +44,7 @@ class MultilevelFeedbackQueue:
         
         # Print queue configuration
         for i, queue in enumerate(self.queues):
+            print(f"{queue.quantum}")
             quantum_info = f" (Quantum: {queue.quantum})" if queue.quantum else " (FCFS)"
             print(f"Queue {i}: {queue.name}{quantum_info}")
         
