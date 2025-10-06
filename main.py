@@ -2,6 +2,8 @@ from models.mlfq import MultilevelFeedbackQueue
 from models.queue import Queue
 from models.process import Process
 from utils.get_data import get_data
+from models.lottery_scheduler import LotteryScheduler
+
 
 data = get_data()
 print(f'Process data: {data['algoritmos'][3]['parametros']['colas']}')
@@ -23,3 +25,18 @@ for queue_data in queues_data['parametros']['colas']:
 mlfq = MultilevelFeedbackQueue(*queues)
 mlfq.load_processes(processes)
 mlfq.run()
+
+
+# --- CÓDIGO PARA LOTTERY SCHEDULER ---
+print(f"\n============================")
+print(f"Algoritmo de Loteria")
+
+config_loteria = None
+for alg_config in data['algoritmos']:
+    if alg_config['algoritmo'] == 'Loteria':
+        config_loteria = alg_config
+        break
+
+if config_loteria:
+    scheduler = LotteryScheduler(config_loteria)
+    scheduler.run()
