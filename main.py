@@ -40,3 +40,5 @@ for alg_config in data['algoritmos']:
 if config_loteria:
     scheduler = LotteryScheduler(config_loteria)
     scheduler.run()
+    #aqui termina el de loteria
+    
