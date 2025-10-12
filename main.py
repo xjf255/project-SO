@@ -3,6 +3,7 @@ from models.queue import Queue
 from models.process import Process
 from utils.get_data import get_data
 from models.lottery_scheduler import LotteryScheduler
+from models.priority import priorityPreemptivo
 
 
 data = get_data()
@@ -41,4 +42,30 @@ if config_loteria:
     scheduler = LotteryScheduler(config_loteria)
     scheduler.run()
     #aqui termina el de loteria
-    
+
+# -- ALGORITMO DE PRIORIDADES --
+print(f"\n============================")
+print(f"Algoritmo de Prioridades (preventivo)")
+
+#Aqui solo hacemos que del objeto DATA agarremos los datos del proceso 'Prioridades'
+config_priority = None
+for alg_config in data['algoritmos']:
+   if alg_config['algoritmo'].lower() == 'prioridades':
+      config_priority = alg_config
+      break
+   
+#Si se encuentra se ejecuta el algoritmo de Prioridades, sino no ÑLAKSJFLAKJF
+if config_priority:
+   resultado = priorityPreemptivo(config_priority)
+   #Solo para mostrar los resultados en consola
+   print("Orden de ejecucion (TimeLine):")
+   print(" -> ".join(resultado["orden_ejecucion"]))
+   print("\n Detalle de procesos:")
+   for p in resultado["procesos"]:
+      print(
+         f"{p['pid']}: llegada={p['llegada']}, rafaga={p['rafaga']}, prioridad={p['prioridad']},"
+         f"inicio={p['inicio']}, final={p['final']}, espera={p['tiempo_espera']}, retorno={p['tiempo_retorno']}"
+      )
+else:
+   print("No se encontraron procesos para ejecutar 'Prioridades'")
+#Fin de algoritmo de prioridades
