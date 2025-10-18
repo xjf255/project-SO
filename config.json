@@ -1,0 +1,93 @@
+{
+  "time_unit": "ticks",
+  "algoritmos": [
+    {
+      "algoritmo": "SJF",
+      "parametros": {
+        "preemptivo": false,
+        "criterio_empate": "FCFS"
+      },
+      "procesos": [
+        { "pid": "P1", "llegada": 0, "rafaga": 8 },
+        { "pid": "P2", "llegada": 1, "rafaga": 4 },
+        { "pid": "P3", "llegada": 3, "rafaga": 9 },
+        { "pid": "P4", "llegada": 4, "rafaga": 5 },
+        { "pid": "P5", "llegada": 7, "rafaga": 2 },
+        { "pid": "P6", "llegada": 8, "rafaga": 6 },
+        { "pid": "P7", "llegada": 12, "rafaga": 1 },
+        { "pid": "P8", "llegada": 13, "rafaga": 10 },
+        { "pid": "P9", "llegada": 15, "rafaga": 3 },
+        { "pid": "P10", "llegada": 18, "rafaga": 7 },
+        { "pid": "P11", "llegada": 19, "rafaga": 5 },
+        { "pid": "P12", "llegada": 20, "rafaga": 12 }
+      ]
+    },
+    {
+      "algoritmo": "Prioridades",
+      "parametros": {
+        "preemptivo": true,
+        "orden_prioridad": "menor_numero_mayor_prioridad",
+        "criterio_empate": "FCFS"
+      },
+      "procesos": [
+        { "pid": "P1", "llegada": 0, "rafaga": 8, "prioridad": 3 },
+        { "pid": "P2", "llegada": 1, "rafaga": 4, "prioridad": 1 },
+        { "pid": "P3", "llegada": 3, "rafaga": 9, "prioridad": 4 },
+        { "pid": "P4", "llegada": 4, "rafaga": 5, "prioridad": 2 },
+        { "pid": "P5", "llegada": 7, "rafaga": 2, "prioridad": 1 },
+        { "pid": "P6", "llegada": 8, "rafaga": 6, "prioridad": 3 },
+        { "pid": "P7", "llegada": 12, "rafaga": 1, "prioridad": 2 },
+        { "pid": "P8", "llegada": 13, "rafaga": 10, "prioridad": 5 },
+        { "pid": "P9", "llegada": 15, "rafaga": 3, "prioridad": 2 },
+        { "pid": "P10", "llegada": 18, "rafaga": 7, "prioridad": 4 },
+        { "pid": "P11", "llegada": 19, "rafaga": 5, "prioridad": 3 },
+        { "pid": "P12", "llegada": 20, "rafaga": 12, "prioridad": 6 }
+      ]
+    },
+    {
+      "algoritmo": "Loteria",
+      "parametros": {
+        "intervalo_sorteo": 1,
+        "semilla": 2025
+      },
+      "procesos": [
+        { "pid": "P1", "llegada": 0, "rafaga": 8, "boletos": 20 },
+        { "pid": "P2", "llegada": 1, "rafaga": 4, "boletos": 50 },
+        { "pid": "P3", "llegada": 3, "rafaga": 9, "boletos": 10 },
+        { "pid": "P4", "llegada": 4, "rafaga": 5, "boletos": 30 },
+        { "pid": "P5", "llegada": 7, "rafaga": 2, "boletos": 40 },
+        { "pid": "P6", "llegada": 8, "rafaga": 6, "boletos": 15 },
+        { "pid": "P7", "llegada": 12, "rafaga": 1, "boletos": 50 },
+        { "pid": "P8", "llegada": 13, "rafaga": 10, "boletos": 5 },
+        { "pid": "P9", "llegada": 15, "rafaga": 3, "boletos": 25 },
+        { "pid": "P10", "llegada": 18, "rafaga": 7, "boletos": 10 },
+        { "pid": "P11", "llegada": 19, "rafaga": 5, "boletos": 35 },
+        { "pid": "P12", "llegada": 20, "rafaga": 12, "boletos": 5 }
+      ]
+    },
+    {
+      "algoritmo": "FeedbackQueue",
+      "parametros": {
+        "colas": [
+          { "nombre": "Q1 (RR-3)", "quantum" : 3 },
+          { "nombre": "Q2 (RR-6)", "quantum" : 6 },
+          { "nombre": "Q3 (FCFS)" }
+        ]
+      },
+      "procesos": [
+        { "pid": "P1", "llegada": 0, "rafaga": 8 },
+        { "pid": "P2", "llegada": 1, "rafaga": 4 },
+        { "pid": "P3", "llegada": 3, "rafaga": 9 },
+        { "pid": "P4", "llegada": 4, "rafaga": 5 },
+        { "pid": "P5", "llegada": 7, "rafaga": 2 },
+        { "pid": "P6", "llegada": 8, "rafaga": 6 },
+        { "pid": "P7", "llegada": 12, "rafaga": 1 },
+        { "pid": "P8", "llegada": 13, "rafaga": 10 },
+        { "pid": "P9", "llegada": 15, "rafaga": 3 },
+        { "pid": "P10", "llegada": 18, "rafaga": 7 },
+        { "pid": "P11", "llegada": 19, "rafaga": 5 },
+        { "pid": "P12", "llegada": 20, "rafaga": 12 }
+      ]
+    }
+  ]
+}
