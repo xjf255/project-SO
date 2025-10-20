@@ -81,3 +81,20 @@ if config_priority:
 else:
    print("No se encontraron procesos para ejecutar 'Prioridades'")
 #Fin de algoritmo de prioridades
+
+# --- ALGORITMO SJF ---
+from models.sjf import run_sjf
+
+print(f"\n============================")
+print(f"Algoritmo SJF (Shortest Job First)")
+
+config_sjf = None
+for alg_config in data['algoritmos']:
+    if alg_config['algoritmo'].lower() == 'sjf':
+        config_sjf = alg_config
+        break
+
+if config_sjf:
+    run_sjf(config_sjf)
+else:
+    print("No se encontraron procesos para ejecutar 'SJF'")
