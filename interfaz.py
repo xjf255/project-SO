@@ -136,7 +136,6 @@ class LotteryScheduler:
 class PriorityScheduler:
     def run(self, config: Dict) -> Dict:
         params = config.get("parametros", {})
-        # --- LÓGICA REACTIVADA ---
         order_asc = params.get("orden_prioridad", "menor_numero_mayor_prioridad") == "menor_numero_mayor_prioridad"
         
         procs = [Process(p["pid"], p["rafaga"], p.get("llegada", 0), p["prioridad"]) for p in config["procesos"]]
@@ -148,7 +147,6 @@ class PriorityScheduler:
         while completed < n:
             while proc_idx < n and procs[proc_idx].arrival_time <= time:
                 p = procs[proc_idx]
-                # Usa la prioridad directamente o su negativo para ordenar
                 priority_val = p.priority if order_asc else -p.priority
                 heapq.heappush(heap, (priority_val, p.arrival_time, p.pid, p))
                 proc_idx += 1
@@ -173,7 +171,6 @@ class PriorityScheduler:
                 current_proc.waiting_time = current_proc.turnaround_time - current_proc.burst_time
                 completed += 1
             else:
-                # Vuelve a insertar el proceso en el montículo con la misma lógica de prioridad
                 priority_val = current_proc.priority if order_asc else -current_proc.priority
                 heapq.heappush(heap, (priority_val, current_proc.arrival_time, current_proc.pid, current_proc))
                 
@@ -264,7 +261,6 @@ class SchedulerGUI:
         self.config_frame = ttk.LabelFrame(left_column, text="3. Parámetros")
         self.seed_label = ttk.Label(self.config_frame, text="Semilla (Loteria):"); self.seed_entry = ttk.Entry(self.config_frame, width=15)
         
-        # --- (REACTIVADO) Menú desplegable para Prioridades ---
         self.priority_order_label = ttk.Label(self.config_frame, text="Orden Prioridad:")
         self.priority_order_var = tk.StringVar()
         self.priority_order_menu = ttk.OptionMenu(
@@ -379,7 +375,6 @@ class SchedulerGUI:
         config = next((item for item in self.loaded_data.get('algoritmos', []) if item['algoritmo'] == algo_name), None)
         if not config: messagebox.showerror("Error", "No se encontró la configuración para el algoritmo."); return
         
-        # --- (AÑADIDO) Actualiza la configuración de prioridad desde la UI antes de ejecutar ---
         if algo_name == "Prioridades":
             if 'parametros' not in config: config['parametros'] = {}
             config['parametros']['orden_prioridad'] = self.priority_order_var.get()
