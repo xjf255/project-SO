@@ -104,8 +104,11 @@ class FCFS_Scheduler:
 
 class LotteryScheduler:
     def run(self, config: Dict) -> Dict:
-        semilla = config.get('parametros', {}).get('semilla')
-        if semilla is not None: random.seed(semilla)
+        # --- MODIFICADO: Semilla eliminada ---
+        # semilla = config.get('parametros', {}).get('semilla')
+        # if semilla is not None: random.seed(semilla)
+        # --- FIN MODIFICACIÓN ---
+        
         procesos = [Process(p['pid'], p['rafaga'], p.get('llegada', 0), tickets=p.get('boletos', 1)) for p in config.get('procesos', [])]
         log, gantt_data, current_time = [], [], 0
         future = sorted(procesos, key=lambda p: p.arrival_time)
@@ -222,9 +225,21 @@ class SchedulerGUI:
         self.update_ui_for_algorithm()
 
     def setup_styles(self):
-        self.COLOR_BACKGROUND = "#2b2b2b"; self.COLOR_FRAME = "#3c3f41"; self.COLOR_TEXT = "#bbbbbb"
-        self.COLOR_ACCENT = "#007acc"; self.COLOR_ACCENT_TEXT = "#ffffff"; self.COLOR_ENTRY_BG = "#45494a"
-        self.COLOR_HEADER = "#323232"
+        self.COLOR_BACKGROUND = "#ffffff"
+        self.COLOR_FRAME = "#e0e0e0"
+        self.COLOR_TEXT = "#000000"
+        self.COLOR_ACCENT = "#007acc"
+        self.COLOR_ACCENT_TEXT = "#ffffff"
+        self.COLOR_ENTRY_BG = "#f0f0f0"
+        self.COLOR_HEADER = "#e0e0e0"
+        
+        self.GANTT_PALETTE = [
+            '#3498db', '#e74c3c', '#2ecc71', '#f1c40f', '#9b59b6', '#34495e', 
+            '#1abc9c', '#e67e22', '#d35400', '#c0392b', '#16a085', '#27ae60', 
+            '#2980b9', '#8e44ad', '#f39c12', '#7f8c8d'
+        ]
+        self.process_colors = {} 
+
         self.style = ttk.Style(self.master); self.style.theme_use("clam")
         self.master.configure(bg=self.COLOR_BACKGROUND)
         self.style.configure(".", background=self.COLOR_BACKGROUND, foreground=self.COLOR_TEXT, fieldbackground=self.COLOR_ENTRY_BG, borderwidth=1)
@@ -233,11 +248,18 @@ class SchedulerGUI:
         self.style.configure("TLabelFrame", background=self.COLOR_BACKGROUND, bordercolor=self.COLOR_FRAME, relief="solid", padding=10)
         self.style.configure("TLabelFrame.Label", background=self.COLOR_BACKGROUND, foreground=self.COLOR_TEXT, font=('Segoe UI', 11, 'bold'))
         self.style.configure("TRadiobutton", background=self.COLOR_BACKGROUND, foreground=self.COLOR_TEXT, indicatorbackground=self.COLOR_FRAME, font=('Segoe UI', 10))
+        
+        # --- MODIFICADO: Color de selección para Radiobutton ---
+        # El punto se vuelve azul
         self.style.map("TRadiobutton", indicatorcolor=[('selected', self.COLOR_ACCENT)])
+        # El texto se vuelve naranja
+        self.style.map("TRadiobutton", foreground=[('selected', '#d35400')]) 
+        # --- FIN MODIFICACIÓN ---
+
         self.style.configure("TButton", background=self.COLOR_ACCENT, foreground=self.COLOR_ACCENT_TEXT, padding=5, font=('Segoe UI', 10, 'bold'), borderwidth=0)
         self.style.map("TButton", background=[('active', '#005a9e')])
-        self.style.configure("Treeview", background=self.COLOR_FRAME, fieldbackground=self.COLOR_FRAME, foreground=self.COLOR_TEXT, rowheight=25)
-        self.style.configure("Treeview.Heading", background=self.COLOR_HEADER, foreground=self.COLOR_ACCENT_TEXT, font=('Segoe UI', 10, 'bold'), relief="flat")
+        self.style.configure("Treeview", background=self.COLOR_ENTRY_BG, fieldbackground=self.COLOR_ENTRY_BG, foreground=self.COLOR_TEXT, rowheight=25)
+        self.style.configure("Treeview.Heading", background=self.COLOR_HEADER, foreground=self.COLOR_TEXT, font=('Segoe UI', 10, 'bold'), relief="flat")
         self.style.map("Treeview.Heading", background=[('active', self.COLOR_ACCENT)])
         self.style.configure("TNotebook", background=self.COLOR_BACKGROUND, borderwidth=0)
         self.style.configure("TNotebook.Tab", background=self.COLOR_FRAME, foreground=self.COLOR_TEXT, padding=[10, 5], font=('Segoe UI', 10, 'bold'))
@@ -259,7 +281,10 @@ class SchedulerGUI:
         self.mlfq_tree.pack(fill=tk.X, pady=5)
         
         self.config_frame = ttk.LabelFrame(left_column, text="3. Parámetros")
-        self.seed_label = ttk.Label(self.config_frame, text="Semilla (Loteria):"); self.seed_entry = ttk.Entry(self.config_frame, width=15)
+        
+        # --- MODIFICADO: Semilla eliminada ---
+        # self.seed_label = ttk.Label(self.config_frame, text="Semilla (Loteria):"); self.seed_entry = ttk.Entry(self.config_frame, width=15)
+        # --- FIN MODIFICACIÓN ---
         
         self.priority_order_label = ttk.Label(self.config_frame, text="Orden Prioridad:")
         self.priority_order_var = tk.StringVar()
@@ -284,7 +309,11 @@ class SchedulerGUI:
         self.gantt_canvas = FigureCanvasTkAgg(self.fig, master=self.gantt_frame)
         self.gantt_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
-        self.log_text = tk.Text(tab_log, state="disabled", wrap=tk.WORD, bg=self.COLOR_FRAME, fg=self.COLOR_TEXT, relief="solid", bd=1, selectbackground=self.COLOR_ACCENT, insertbackground=self.COLOR_ACCENT_TEXT)
+        self.log_text = tk.Text(tab_log, state="disabled", wrap=tk.WORD, 
+                                bg=self.COLOR_ENTRY_BG, fg=self.COLOR_TEXT, 
+                                relief="solid", bd=1, 
+                                selectbackground=self.COLOR_ACCENT, 
+                                insertbackground=self.COLOR_TEXT)
         self.log_text.pack(fill=tk.BOTH, expand=True)
 
         self.results_tree = ttk.Treeview(tab_metrics, columns=("PID", "Ráfaga", "Llegada", "Final", "T. Retorno", "T. Espera", "T. Respuesta"), show="headings")
@@ -300,13 +329,15 @@ class SchedulerGUI:
         y_pos = {pid: i for i, pid in enumerate(pids)}
         
         for item in gantt_data:
-            ax.broken_barh([(item['start'], item['duration'])], (y_pos[item['pid']] - 0.4, 0.8), facecolors=self.COLOR_ACCENT)
+            pid = item['pid']
+            color = self.process_colors.get(pid, self.COLOR_ACCENT) 
+            ax.broken_barh([(item['start'], item['duration'])], (y_pos[pid] - 0.4, 0.8), facecolors=color)
 
         ax.set_yticks([i for i in range(len(pids))])
         ax.set_yticklabels(pids, color=self.COLOR_TEXT)
         ax.set_xlabel('Tiempo', color=self.COLOR_TEXT)
         ax.set_ylabel('Procesos', color=self.COLOR_TEXT)
-        ax.set_title('Diagrama de Gantt', color=self.COLOR_ACCENT_TEXT, fontsize=14, weight='bold')
+        ax.set_title('Diagrama de Gantt', color=self.COLOR_ACCENT, fontsize=14, weight='bold')
         ax.grid(True, axis='x', linestyle='--', color=self.COLOR_FRAME)
         
         ax.spines['top'].set_visible(False); ax.spines['right'].set_visible(False)
@@ -339,20 +370,22 @@ class SchedulerGUI:
         if not algo_name: return
         
         self.config_frame.pack_forget(); self.mlfq_config_frame.pack_forget()
-        for w in [self.seed_label, self.seed_entry, self.priority_order_label, self.priority_order_menu]: 
+        
+        # --- MODIFICADO: Semilla eliminada de la lista ---
+        for w in [self.priority_order_label, self.priority_order_menu]: 
             w.pack_forget()
+        # --- FIN MODIFICACIÓN ---
+            
         for i in self.mlfq_tree.get_children(): self.mlfq_tree.delete(i)
 
         config = next((item for item in self.loaded_data.get('algoritmos', []) if item['algoritmo'] == algo_name), None)
         if not config: return
         
         params = config.get('parametros', {})
-        if algo_name == "Loteria":
-            self.config_frame.pack(fill=tk.X, pady=5)
-            self.seed_label.pack(side=tk.LEFT, anchor='w')
-            self.seed_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
-            self.seed_entry.delete(0, tk.END); self.seed_entry.insert(0, params.get('semilla', ''))
-        elif algo_name == "Prioridades":
+        
+        # --- MODIFICADO: Bloque 'Loteria' eliminado ---
+        if algo_name == "Prioridades":
+        # --- FIN MODIFICACIÓN ---
             self.config_frame.pack(fill=tk.X, pady=5)
             self.priority_order_label.pack(anchor=tk.W)
             self.priority_order_menu.pack(fill=tk.X)
@@ -382,6 +415,12 @@ class SchedulerGUI:
         try:
             results = runner.run(config)
             if results:
+                all_pids = sorted(list(set(p['pid'] for p in results.get("gantt_data", []))))
+                self.process_colors = {
+                    pid: self.GANTT_PALETTE[i % len(self.GANTT_PALETTE)]
+                    for i, pid in enumerate(all_pids)
+                }
+
                 for line in results["orden_ejecucion"]: self.log_text.insert(tk.END, line + "\n")
                 
                 sorted_processes = sorted(results["procesos_finales"], key=lambda p: p['pid'])
@@ -401,6 +440,7 @@ class SchedulerGUI:
 
     def clear_all(self, clear_file_data=True):
         if clear_file_data: self.loaded_data = {}
+        self.process_colors = {} 
         for i in self.mlfq_tree.get_children(): self.mlfq_tree.delete(i)
         self.log_text.config(state="normal"); self.log_text.delete("1.0", tk.END); self.log_text.config(state="disabled")
         for i in self.results_tree.get_children(): self.results_tree.delete(i)
