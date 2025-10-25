@@ -12,6 +12,7 @@ from matplotlib.figure import Figure
 
 # ==============================================================================
 # 1. CLASE DE PROCESO UNIVERSAL Y ALGORITMOS DE COLA
+# (Sin cambios en esta sección)
 # ==============================================================================
 
 class Process:
@@ -53,6 +54,7 @@ class RoundRobin:
 
 # ==============================================================================
 # 2. LÓGICA DE LOS 5 PLANIFICADORES PRINCIPALES (MODIFICADOS PARA GANTT)
+# (Sin cambios en esta sección)
 # ==============================================================================
 
 class Queue:
@@ -104,11 +106,6 @@ class FCFS_Scheduler:
 
 class LotteryScheduler:
     def run(self, config: Dict) -> Dict:
-        # --- MODIFICADO: Semilla eliminada ---
-        # semilla = config.get('parametros', {}).get('semilla')
-        # if semilla is not None: random.seed(semilla)
-        # --- FIN MODIFICACIÓN ---
-        
         procesos = [Process(p['pid'], p['rafaga'], p.get('llegada', 0), tickets=p.get('boletos', 1)) for p in config.get('procesos', [])]
         log, gantt_data, current_time = [], [], 0
         future = sorted(procesos, key=lambda p: p.arrival_time)
@@ -141,11 +138,13 @@ class PriorityScheduler:
         params = config.get("parametros", {})
         order_asc = params.get("orden_prioridad", "menor_numero_mayor_prioridad") == "menor_numero_mayor_prioridad"
         
-        procs = [Process(p["pid"], p["rafaga"], p.get("llegada", 0), p["prioridad"]) for p in config["procesos"]]
+        procs = [Process(p["pid"], p["rafaga"], p.get("llegada", 0), p.get("prioridad", 0)) for p in config["procesos"]]
         time, completed, n = 0, 0, len(procs)
         heap, log, gantt_data = [], [], []
         procs.sort(key=lambda p: p.arrival_time)
         proc_idx = 0
+        
+        last_pid = None 
         
         while completed < n:
             while proc_idx < n and procs[proc_idx].arrival_time <= time:
@@ -156,29 +155,43 @@ class PriorityScheduler:
             
             if not heap:
                 time = procs[proc_idx].arrival_time if proc_idx < n else time + 1
+                last_pid = None 
                 continue
             
             _, _, _, current_proc = heapq.heappop(heap)
             
             if current_proc.response_time == -1: current_proc.response_time = time - current_proc.arrival_time
             
+            if last_pid == current_proc.pid:
+                gantt_data[-1]['duration'] += 1
+            else:
+                gantt_data.append({'pid': current_proc.pid, 'start': time, 'duration': 1})
+            last_pid = current_proc.pid
+            
             log.append(f"{time}-{time+1}: {current_proc.pid} ejecutado.")
-            gantt_data.append({'pid': current_proc.pid, 'start': time, 'duration': 1})
             
             current_proc.remaining_time -= 1
             time += 1
             
+            while proc_idx < n and procs[proc_idx].arrival_time <= time:
+                p = procs[proc_idx]
+                priority_val = p.priority if order_asc else -p.priority
+                heapq.heappush(heap, (priority_val, p.arrival_time, p.pid, p))
+                proc_idx += 1
+
             if current_proc.remaining_time == 0:
                 current_proc.finish_time = time
                 current_proc.turnaround_time = current_proc.finish_time - current_proc.arrival_time
                 current_proc.waiting_time = current_proc.turnaround_time - current_proc.burst_time
                 completed += 1
+                last_pid = None 
             else:
                 priority_val = current_proc.priority if order_asc else -current_proc.priority
                 heapq.heappush(heap, (priority_val, current_proc.arrival_time, current_proc.pid, current_proc))
                 
         final_data = [{"pid": p.pid, "rafaga": p.burst_time, "llegada": p.arrival_time, "final": p.finish_time, "tiempo_retorno": p.turnaround_time, "tiempo_espera": p.waiting_time, "tiempo_respuesta": p.response_time} for p in procs]
         return {"orden_ejecucion": log, "procesos_finales": final_data, "gantt_data": gantt_data}
+
 
 class MLFQScheduler:
     def run(self, config: Dict) -> Dict:
@@ -188,6 +201,9 @@ class MLFQScheduler:
         log, gantt_data, current_time = [], [], 0
         if queues:
             for p in all_processes: queues[0].add_process(p)
+        
+        last_pid = None 
+
         while any(p.remaining_time > 0 for p in all_processes):
             executed_in_tick = False
             for queue_idx, queue in enumerate(queues):
@@ -195,17 +211,30 @@ class MLFQScheduler:
                     results = queue.execute(current_time)
                     if results:
                         process, start_time, duration, completed = results[0]
-                        gantt_data.append({'pid': process.pid, 'start': start_time, 'duration': duration})
+                        
+                        if last_pid == process.pid and gantt_data and gantt_data[-1]['start'] + gantt_data[-1]['duration'] == start_time:
+                            gantt_data[-1]['duration'] += duration
+                        else:
+                            gantt_data.append({'pid': process.pid, 'start': start_time, 'duration': duration})
+                        last_pid = process.pid
+
                         current_time = start_time
                         for _ in range(duration): log.append(f"{current_time}-{current_time+1}: {process.pid} (desde {queue.name})"); current_time += 1
+                        
                         if not completed and queue.quantum and duration == queue.quantum:
                             if queue_idx < len(queues) - 1:
                                 queue.remove_process(process); queues[queue_idx + 1].add_process(process)
                                 log.append(f"-> {process.pid} degradado a {queues[queue_idx + 1].name}")
+                        
+                        if completed:
+                            last_pid = None
+
                         executed_in_tick = True; break 
             if not executed_in_tick:
                 future_arrivals = [p.arrival_time for p in all_processes if p.arrival_time > current_time and p.remaining_time > 0]
                 current_time = min(future_arrivals) if future_arrivals else current_time + 1
+                last_pid = None 
+        
         final_data = [{"pid": p.pid, "rafaga": p.burst_time, "llegada": p.arrival_time, "final": p.finish_time, "tiempo_retorno": p.turnaround_time, "tiempo_espera": p.waiting_time, "tiempo_respuesta": p.response_time} for p in all_processes]
         return {"orden_ejecucion": log, "procesos_finales": final_data, "gantt_data": gantt_data}
 
@@ -249,15 +278,19 @@ class SchedulerGUI:
         self.style.configure("TLabelFrame.Label", background=self.COLOR_BACKGROUND, foreground=self.COLOR_TEXT, font=('Segoe UI', 11, 'bold'))
         self.style.configure("TRadiobutton", background=self.COLOR_BACKGROUND, foreground=self.COLOR_TEXT, indicatorbackground=self.COLOR_FRAME, font=('Segoe UI', 10))
         
-        # --- MODIFICADO: Color de selección para Radiobutton ---
-        # El punto se vuelve azul
         self.style.map("TRadiobutton", indicatorcolor=[('selected', self.COLOR_ACCENT)])
-        # El texto se vuelve naranja
         self.style.map("TRadiobutton", foreground=[('selected', '#d35400')]) 
-        # --- FIN MODIFICACIÓN ---
 
         self.style.configure("TButton", background=self.COLOR_ACCENT, foreground=self.COLOR_ACCENT_TEXT, padding=5, font=('Segoe UI', 10, 'bold'), borderwidth=0)
         self.style.map("TButton", background=[('active', '#005a9e')])
+        
+        # --- Estilo para botón de Prioridad destacado (verde) ---
+        self.style.configure("Highlight.TButton", background="#2ecc71", foreground=self.COLOR_ACCENT_TEXT, padding=5, font=('Segoe UI', 10, 'bold'), borderwidth=0)
+        self.style.map("Highlight.TButton", background=[('active', '#27ae60')])
+        
+        self.style.configure("Danger.TButton", background="#e74c3c", foreground=self.COLOR_ACCENT_TEXT)
+        self.style.map("Danger.TButton", background=[('active', '#c0392b')])
+
         self.style.configure("Treeview", background=self.COLOR_ENTRY_BG, fieldbackground=self.COLOR_ENTRY_BG, foreground=self.COLOR_TEXT, rowheight=25)
         self.style.configure("Treeview.Heading", background=self.COLOR_HEADER, foreground=self.COLOR_TEXT, font=('Segoe UI', 10, 'bold'), relief="flat")
         self.style.map("Treeview.Heading", background=[('active', self.COLOR_ACCENT)])
@@ -270,32 +303,63 @@ class SchedulerGUI:
         left_column = ttk.Frame(main_frame, width=400); left_column.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 15)); left_column.pack_propagate(False)
         right_column = ttk.Frame(main_frame); right_column.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         
+        # --- Columna Izquierda (Configuración) ---
+        
         file_frame = ttk.LabelFrame(left_column, text="1. Cargar Datos"); file_frame.pack(fill=tk.X, pady=5)
         ttk.Button(file_frame, text="Cargar Archivo de Configuración", command=self.load_file).pack(fill=tk.X)
-        self.algo_frame = ttk.LabelFrame(left_column, text="2. Algoritmo"); self.algo_frame.pack(fill=tk.X, pady=5)
+        
+        process_mgmt_frame = ttk.LabelFrame(left_column, text="2. Gestión de Procesos")
+        process_mgmt_frame.pack(fill=tk.X, pady=5)
+        
+        process_tree_frame = ttk.Frame(process_mgmt_frame)
+        process_tree_frame.pack(fill=tk.X)
+        
+        process_cols = ("PID", "Ráfaga", "Llegada", "Prioridad", "Boletos")
+        # --- Altura 12 es el default, se cambiará dinámicamente ---
+        self.process_tree = ttk.Treeview(process_tree_frame, columns=process_cols, show="headings", height=12) 
+        
+        process_scroll = ttk.Scrollbar(process_tree_frame, orient="vertical", command=self.process_tree.yview)
+        self.process_tree.configure(yscrollcommand=process_scroll.set)
+        
+        process_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        self.process_tree.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        
+        for col in process_cols: 
+            self.process_tree.heading(col, text=col)
+            width = 50 if col != "PID" else 70
+            self.process_tree.column(col, width=width, anchor=tk.CENTER)
+            
+        process_button_frame = ttk.Frame(process_mgmt_frame)
+        process_button_frame.pack(fill=tk.X, pady=(5,0))
+        
+        ttk.Button(process_button_frame, text="Agregar Proceso", command=self.add_process_dialog).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0,5))
+        ttk.Button(process_button_frame, text="Eliminar Proceso", command=self.remove_selected_process, style="Danger.TButton").pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(5,0))
+
+        self.algo_frame = ttk.LabelFrame(left_column, text="3. Algoritmo"); self.algo_frame.pack(fill=tk.X, pady=5)
         self.selected_algorithm = tk.StringVar(); self.selected_algorithm.trace("w", self.update_ui_for_algorithm)
         
-        self.mlfq_config_frame = ttk.LabelFrame(left_column, text="Configuración Colas")
+        self.mlfq_config_frame = ttk.LabelFrame(left_column, text="Configuración Colas (FeedbackQueue)")
+        # --- Altura 3 es el default, se cambiará dinámicamente ---
         self.mlfq_tree = ttk.Treeview(self.mlfq_config_frame, columns=("Nombre", "Prio", "Quantum"), show="headings", height=3)
         for col in ("Nombre", "Prio", "Quantum"): self.mlfq_tree.heading(col, text=col); self.mlfq_tree.column(col, width=70)
         self.mlfq_tree.pack(fill=tk.X, pady=5)
         
-        self.config_frame = ttk.LabelFrame(left_column, text="3. Parámetros")
-        
-        # --- MODIFICADO: Semilla eliminada ---
-        # self.seed_label = ttk.Label(self.config_frame, text="Semilla (Loteria):"); self.seed_entry = ttk.Entry(self.config_frame, width=15)
-        # --- FIN MODIFICACIÓN ---
+        self.config_frame = ttk.LabelFrame(left_column, text="4. Parámetros (Prioridades)")
         
         self.priority_order_label = ttk.Label(self.config_frame, text="Orden Prioridad:")
         self.priority_order_var = tk.StringVar()
         self.priority_order_menu = ttk.OptionMenu(
             self.config_frame, self.priority_order_var, "", 
-            "menor_numero_mayor_prioridad", "mayor_numero_mayor_prioridad", style="TButton"
+            "menor_numero_mayor_prioridad", "mayor_numero_mayor_prioridad"
         )
+        
+        # --- Columna Derecha (Resultados y Acciones) ---
+        
+        control_lf = ttk.LabelFrame(right_column, text="5. Acciones")
+        control_lf.pack(fill=tk.X, pady=(0, 10)) 
 
-        control_frame = ttk.Frame(left_column); control_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=20)
-        ttk.Button(control_frame, text="Ejecutar Simulación", command=self.run_simulation, padding=10).pack(fill=tk.X)
-        ttk.Button(control_frame, text="Limpiar Todo", command=self.clear_all, padding=10).pack(fill=tk.X, pady=5)
+        ttk.Button(control_lf, text="Ejecutar Simulación", command=self.run_simulation, padding=10).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5, pady=5)
+        ttk.Button(control_lf, text="Limpiar Todo", command=self.clear_all, padding=10).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5, pady=5)
 
         notebook = ttk.Notebook(right_column)
         notebook.pack(fill=tk.BOTH, expand=True)
@@ -319,6 +383,107 @@ class SchedulerGUI:
         self.results_tree = ttk.Treeview(tab_metrics, columns=("PID", "Ráfaga", "Llegada", "Final", "T. Retorno", "T. Espera", "T. Respuesta"), show="headings")
         for col in self.results_tree['columns']: self.results_tree.heading(col, text=col); self.results_tree.column(col, width=120, anchor=tk.CENTER)
         self.results_tree.pack(fill=tk.BOTH, expand=True)
+
+    # --- Diálogo para agregar proceso ---
+    def add_process_dialog(self):
+        dialog = tk.Toplevel(self.master)
+        dialog.title("Agregar Proceso")
+        dialog.configure(bg=self.COLOR_BACKGROUND)
+        dialog.resizable(False, False)
+
+        frame = ttk.Frame(dialog, padding=15)
+        frame.pack(expand=True, fill=tk.BOTH)
+
+        entries = {}
+        fields = ["PID", "Ráfaga", "Llegada", "Prioridad", "Boletos"]
+        
+        pid_num = 1
+        existing_pids = {self.process_tree.item(item_id, 'values')[0] for item_id in self.process_tree.get_children()}
+        
+        pid_str = f"P{pid_num:02d}"
+        while pid_str in existing_pids:
+            pid_num += 1
+            pid_str = f"P{pid_num:02d}"
+        
+        defaults = [pid_str, "5", "0", "0", "1"]
+
+        for i, field in enumerate(fields):
+            ttk.Label(frame, text=f"{field}:").grid(row=i, column=0, sticky=tk.W, pady=5, padx=5)
+            entry = ttk.Entry(frame, width=20)
+            entry.grid(row=i, column=1, pady=5, padx=5)
+            entry.insert(0, defaults[i])
+            entries[field] = entry
+        
+        entries["PID"].focus_set()
+
+        def on_ok():
+            try:
+                pid = entries["PID"].get().strip()
+                if not pid:
+                    raise ValueError("PID no puede estar vacío")
+                
+                if pid in existing_pids:
+                    raise ValueError(f"PID '{pid}' ya existe")
+
+                rafaga = int(entries["Ráfaga"].get())
+                llegada = int(entries["Llegada"].get())
+                prioridad = int(entries["Prioridad"].get())
+                boletos = int(entries["Boletos"].get())
+                
+                if rafaga <= 0:
+                     raise ValueError("La ráfaga debe ser positiva")
+                if llegada < 0 or prioridad < 0 or boletos < 0:
+                    raise ValueError("Los valores numéricos no pueden ser negativos")
+
+                values = (pid, rafaga, llegada, prioridad, boletos)
+                self.process_tree.insert("", "end", values=values)
+                dialog.destroy()
+
+            except ValueError as e:
+                messagebox.showerror("Error de Validación", str(e), parent=dialog)
+        
+        button_frame = ttk.Frame(frame)
+        button_frame.grid(row=len(fields), column=0, columnspan=2, pady=10)
+
+        ok_button = ttk.Button(button_frame, text="Agregar", command=on_ok)
+        ok_button.pack(side=tk.LEFT, padx=5)
+        
+        cancel_button = ttk.Button(button_frame, text="Cancelar", command=dialog.destroy)
+        cancel_button.pack(side=tk.LEFT, padx=5)
+        
+        dialog.transient(self.master)
+        dialog.grab_set()
+        self.master.wait_window(dialog)
+
+    # --- Eliminar proceso seleccionado ---
+    def remove_selected_process(self):
+        selected_items = self.process_tree.selection()
+        if not selected_items:
+            messagebox.showwarning("Nada Seleccionado", "Por favor, selecciona uno o más procesos de la tabla para eliminar.", parent=self.master)
+            return
+        
+        if messagebox.askyesno("Confirmar Eliminación", f"¿Estás seguro de que quieres eliminar {len(selected_items)} proceso(s)?", parent=self.master):
+            for item in selected_items:
+                self.process_tree.delete(item)
+
+    # --- Obtener procesos desde la tabla de la GUI ---
+    def get_processes_from_tree(self) -> Optional[List[Dict]]:
+        processes = []
+        try:
+            for item_id in self.process_tree.get_children():
+                values = self.process_tree.item(item_id, 'values')
+                p = {
+                    "pid": values[0],
+                    "rafaga": int(values[1]),
+                    "llegada": int(values[2]),
+                    "prioridad": int(values[3]),
+                    "boletos": int(values[4])
+                }
+                processes.append(p)
+            return processes
+        except (ValueError, IndexError) as e:
+            messagebox.showerror("Error en Datos de Proceso", f"Hay un error en los datos de la tabla de procesos: {e}")
+            return None
 
     def draw_gantt_chart(self, gantt_data):
         self.fig.clear()
@@ -359,22 +524,48 @@ class SchedulerGUI:
     
     def populate_gui_from_data(self):
         self.clear_all(clear_file_data=False)
+        
+        self.process_tree.delete(*self.process_tree.get_children())
+        
+        alg_configs = self.loaded_data.get('algoritmos', [])
+        if not alg_configs: return
+        
+        default_processes = []
+        for alg_config in alg_configs:
+            if 'procesos' in alg_config:
+                default_processes = alg_config['procesos']
+                break
+        
+        if default_processes:
+            for p in default_processes:
+                values = (
+                    p.get('pid'), 
+                    p.get('rafaga'), 
+                    p.get('llegada', 0), 
+                    p.get('prioridad', 0), 
+                    p.get('boletos', 1)
+                )
+                self.process_tree.insert("", "end", values=values)
+        
         for widget in self.algo_frame.winfo_children(): widget.destroy()
-        alg_names = [alg['algoritmo'] for alg in self.loaded_data.get('algoritmos', [])]
-        if not alg_names: return
+        alg_names = [alg['algoritmo'] for alg in alg_configs]
+        
         for name in alg_names: ttk.Radiobutton(self.algo_frame, text=name, variable=self.selected_algorithm, value=name).pack(anchor=tk.W)
         self.selected_algorithm.set(alg_names[0])
     
+    # --- MODIFICADO: Esta función ahora re-configura la UI dinámicamente ---
     def update_ui_for_algorithm(self, *args):
         algo_name = self.selected_algorithm.get()
         if not algo_name: return
         
+        # --- Resetear estados de la UI ---
         self.config_frame.pack_forget(); self.mlfq_config_frame.pack_forget()
-        
-        # --- MODIFICADO: Semilla eliminada de la lista ---
+        self.priority_order_menu.configure(style="TButton") 
+        self.process_tree.configure(height=12) # Altura normal
+        self.mlfq_tree.configure(height=3) # Altura normal
+            
         for w in [self.priority_order_label, self.priority_order_menu]: 
             w.pack_forget()
-        # --- FIN MODIFICACIÓN ---
             
         for i in self.mlfq_tree.get_children(): self.mlfq_tree.delete(i)
 
@@ -383,17 +574,27 @@ class SchedulerGUI:
         
         params = config.get('parametros', {})
         
-        # --- MODIFICADO: Bloque 'Loteria' eliminado ---
         if algo_name == "Prioridades":
-        # --- FIN MODIFICACIÓN ---
             self.config_frame.pack(fill=tk.X, pady=5)
             self.priority_order_label.pack(anchor=tk.W)
             self.priority_order_menu.pack(fill=tk.X)
             self.priority_order_var.set(params.get('orden_prioridad', 'menor_numero_mayor_prioridad'))
+            
+            # Aplicar estilo destacado (verde)
+            self.priority_order_menu.configure(style="Highlight.TButton")
+            
+            # --- MODIFICADO: Reducir tabla de procesos ---
+            self.process_tree.configure(height=8) 
+            # --- FIN MODIFICADO ---
+
         elif algo_name == "FeedbackQueue":
             self.mlfq_config_frame.pack(fill=tk.X, pady=5)
             for idx, q in enumerate(params.get('colas', [])):
                 self.mlfq_tree.insert("", "end", values=(q.get('nombre'), idx + 1, q.get('quantum', 'FCFS')))
+            
+            # Ajustar alturas de las tablas
+            self.process_tree.configure(height=8) # Reducir tabla de procesos
+            self.mlfq_tree.configure(height=6) # Aumentar tabla de colas
 
     def run_simulation(self):
         self.log_text.config(state="normal"); self.log_text.delete("1.0", tk.END)
@@ -405,8 +606,16 @@ class SchedulerGUI:
         runner = self.algorithms.get(algo_name)
         if not runner: messagebox.showerror("Error", f"Algoritmo '{algo_name}' no implementado."); return
         
-        config = next((item for item in self.loaded_data.get('algoritmos', []) if item['algoritmo'] == algo_name), None)
-        if not config: messagebox.showerror("Error", "No se encontró la configuración para el algoritmo."); return
+        config = next((item for item in self.loaded_data.get('algoritmos', []) if item['algoritmo'] == algo_name), {}).copy()
+        
+        current_processes = self.get_processes_from_tree()
+        if current_processes is None: 
+            return
+        if not current_processes:
+            messagebox.showerror("Error", "No hay procesos en la tabla para simular.")
+            return
+            
+        config['procesos'] = current_processes
         
         if algo_name == "Prioridades":
             if 'parametros' not in config: config['parametros'] = {}
@@ -415,7 +624,7 @@ class SchedulerGUI:
         try:
             results = runner.run(config)
             if results:
-                all_pids = sorted(list(set(p['pid'] for p in results.get("gantt_data", []))))
+                all_pids = sorted(list(set(p['pid'] for p in results.get("procesos_finales", []))))
                 self.process_colors = {
                     pid: self.GANTT_PALETTE[i % len(self.GANTT_PALETTE)]
                     for i, pid in enumerate(all_pids)
@@ -445,6 +654,9 @@ class SchedulerGUI:
         self.log_text.config(state="normal"); self.log_text.delete("1.0", tk.END); self.log_text.config(state="disabled")
         for i in self.results_tree.get_children(): self.results_tree.delete(i)
         for widget in self.algo_frame.winfo_children(): widget.destroy()
+        
+        self.process_tree.delete(*self.process_tree.get_children())
+
         self.fig.clear()
         self.gantt_canvas.draw()
 
